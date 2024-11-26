@@ -5,6 +5,43 @@ import {
   addLoggedUserAsFutsalCustomer,
   addGuestUserAsFutsalCustomer,
 } from "../utils/customer.utils.js";
+import { adjustDateToNepalTimezone } from "../utils/helper.utils.js";
+
+//GET API: Get reservation by id
+export const getReservation = async (req, res) => {
+  const id = req.params.id;
+  try {
+    const reservation = await Reservation.findById(id).populate([
+      {
+        path: "slot",
+        select:
+          "date startTime endTime basePrice dynamicPrice isHoliday isWeekend",
+      },
+      {
+        path: "user",
+        select: "fullName email contact",
+      },
+    ]);
+    if (!reservation) {
+      return res.status(404).json({
+        success: false,
+        message: "Reservation not found",
+      });
+    }
+    res.status(200).json({
+      success: true,
+      message: "Reservation fetched successfully",
+      data: reservation,
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: "An error occurred while fetching reservations",
+      message: error.message,
+    });
+  }
+};
+
 // POST API: Add new reservation
 export const addReservation = async (req, res) => {
   const reservationObject = req.body;
@@ -41,26 +78,36 @@ export const addReservation = async (req, res) => {
 // GET API: List all reservation
 export const listReservations = async (req, res) => {
   const { venueId } = req.params;
-  console.log("VENUE ID: ", venueId);
+  const { date } = req.query;
+  let today = adjustDateToNepalTimezone(date);
+  let match = { date: { $gte: today, $lte: today } };
+  let populateOptions = [
+    {
+      path: "slot",
+      match: match && Object.keys(match).length ? match : null,
+      select:
+        "date startTime endTime basePrice dynamicPrice isHoliday isWeekend",
+    },
+    {
+      path: "user",
+      select: "email contact fullName",
+    },
+  ];
   try {
-    let reservations = await Reservation.find({ futsal: venueId }).populate([
-      {
-        path: "slot",
-        select: "date startTime endTime basePrice dynamicPrice isHoliday isWeekend", // Fields to include from the Slot model
-      },
-      {
-        path: "user",
-        select: "email contact fullName", // Fields to include from the User model
-      },
-    ])
-    .select("-futsal -createdAt -updatedAt -__v");
+    let reservations = await Reservation.find({ futsal: venueId })
+      .populate(populateOptions)
+      .select("-futsal -createdAt -updatedAt -__v");
     if (reservations.length === 0) {
       return res.status(200).json({
         success: true,
         message: "No reservation found",
       });
     }
-
+    if (date) {
+      reservations = reservations.filter(
+        (reservation) => reservation.slot !== null
+      );
+    }
     reservations = reservations.map((reservation) => ({
       id: reservation._id,
       slot: {
@@ -68,7 +115,10 @@ export const listReservations = async (req, res) => {
         slotDate: reservation.slot.date,
         slotTime: `${reservation.slot.startTime} - ${reservation.slot.endTime}`,
         isHoliday: reservation.slot.isHoliday || reservation.slot.isWeekend,
-        price: reservation.slot.isHoliday || reservation.slot.isWeekend ? reservation.slot.dynamicPrice : reservation.slot.basePrice
+        price:
+          reservation.slot.isHoliday || reservation.slot.isWeekend
+            ? reservation.slot.dynamicPrice
+            : reservation.slot.basePrice,
       },
       customer: reservation.user || reservation.guestUser,
     }));

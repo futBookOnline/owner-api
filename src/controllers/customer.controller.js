@@ -3,11 +3,10 @@ import {
   numberOfGamesPlayedByCustomer,
   lastPlayedDate,
 } from "../utils/customer.utils.js";
-
+import { isHexadecimalString } from "../utils/helper.utils.js";
 // GET API: List All Customers
 export const listCustomers = async (req, res) => {
   const { venueId } = req.params;
-  console.log("VENUE ID: ", venueId);
   try {
     let customers = await Customer.find({ futsal: venueId }).populate(
       "user",
@@ -70,35 +69,41 @@ export const listCustomers = async (req, res) => {
 };
 
 // GET API: Fetch Customer History
-export const getCustomerHistory = async(req, res) => {
-  const {venueId} = req.params
-  let {isRegistered, user} = req.query
-  isRegistered = isRegistered === 'true'
-  user = JSON.parse(user)
-  user = isRegistered ? user._id : user
+export const getCustomerHistory = async (req, res) => {
+  const { venueId } = req.params;
+  let { isRegistered, user } = req.query;
+  isRegistered = isRegistered === "true";
+  user = JSON.parse(user);
+  user = isRegistered ? user._id : user;
   try {
-    let customerHistories = await numberOfGamesPlayedByCustomer(venueId,
+    let customerHistories = await numberOfGamesPlayedByCustomer(
+      venueId,
       isRegistered,
-      user)
-      console.log("CUSTOMER HISTORIES: ", customerHistories)
-      if (customerHistories.length === 0) {
-        return res.status(200).json({
-          success: true,
-          message: "No customer history found",
-        });
-      }
-      customerHistories = customerHistories.map(customerHistory => ({
-        date: customerHistory.slot.date,
-        time: `${customerHistory.slot.startTime} - ${customerHistory.slot.endTime}`,
-        isHoliday: customerHistory.slot.isHoliday || customerHistory.slot.isWeekend,
-        price: customerHistory.slot.isHoliday || customerHistory.slot.isWeekend ? customerHistory.slot.basePrice : customerHistory.slot.dynamicPrice
-      }))
-      //date time price isholiday
+      user
+    );
+    if (customerHistories.length === 0) {
+      return res.status(404).json({
+        success: true,
+        message: "No customer history found",
+      });
+    }
+    customerHistories = customerHistories.map((customerHistory) => ({
+      reservationId: customerHistory._id,
+      date: customerHistory.slot.date,
+      time: `${customerHistory.slot.startTime} - ${customerHistory.slot.endTime}`,
+      isHoliday:
+        customerHistory.slot.isHoliday || customerHistory.slot.isWeekend,
+      price:
+        customerHistory.slot.isHoliday || customerHistory.slot.isWeekend
+          ? customerHistory.slot.basePrice
+          : customerHistory.slot.dynamicPrice,
+    }));
+    //date time price isholiday
     return res.status(200).json({
       success: true,
       message: "Customer histories fetched successfully",
       data: customerHistories,
-    })
+    });
   } catch (error) {
     res.status(400).json({
       success: false,
@@ -106,5 +111,35 @@ export const getCustomerHistory = async(req, res) => {
       error: error.message,
     });
   }
-  
-}
+};
+
+// DELETE API: Remove Customer
+export const deleteCustomer = async (req, res) => {
+  let { id } = req.params;
+  const isValidObjectId = isHexadecimalString(id);
+    if (!isValidObjectId) {
+      return res.status(404).json({
+        success: false,
+        message: "Customer not found",
+      });
+    }
+  try {
+    const deletedCustomer = await Customer.findByIdAndDelete(id);
+    if (!deletedCustomer) {
+      return res.status(404).json({
+        success: true,
+        message: "Customer not found",
+      });
+    }
+    return res.status(200).json({
+      success: true,
+      message: "Customer deleted successfully",
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: "An error occurred while removing customer",
+      error: error.message,
+    });
+  }
+};

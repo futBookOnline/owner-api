@@ -68,7 +68,6 @@ export const generateSlots = async (venue, date) => {
     // Save generated slots to the database
     try {
       await Slot.insertMany(slots); // Batch save to the database
-      console.log("Slots successfully generated for venue:", venue.name);
     } catch (error) {
       console.error("Error saving slots:", error);
     }

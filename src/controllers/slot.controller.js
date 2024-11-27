@@ -50,8 +50,6 @@ export const listSlots = async (req, res) => {
 export const addDailySlots = async (req, res) => {
   try {
     const { venueId, date } = req.body; // Example input: { "venueId": "123", "date": "2024-09-24" }
-    console.log("VENUE ID: ", venueId)
-    console.log("DATE: ", date)
     const isValidObjectId = isHexadecimalString(venueId);
     if (!isValidObjectId) {
       return res.status(404).json({

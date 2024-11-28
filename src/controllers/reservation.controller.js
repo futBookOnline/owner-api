@@ -5,7 +5,10 @@ import {
   addLoggedUserAsFutsalCustomer,
   addGuestUserAsFutsalCustomer,
 } from "../utils/customer.utils.js";
-import { adjustDateToNepalTimezone } from "../utils/helper.utils.js";
+import {
+  adjustDateToNepalTimezone,
+  isHexadecimalString,
+} from "../utils/helper.utils.js";
 
 //GET API: Get reservation by id
 export const getReservation = async (req, res) => {
@@ -131,6 +134,52 @@ export const listReservations = async (req, res) => {
     res.status(400).json({
       success: false,
       message: "An error occurred while fetching reservations",
+      error: error.message,
+    });
+  }
+};
+
+// DELETE API: Remove reservation
+export const deleteReservation = async (req, res) => {
+  const { id } = req.params;
+  const isValidObjectId = isHexadecimalString(id);
+  if (!isValidObjectId) {
+    return res.status(404).json({
+      success: false,
+      message: "Reservation not found",
+    });
+  }
+  try {
+    const deletedReservation = await Reservation.findByIdAndDelete(id)
+    // const deletedReservation = await Reservation.findById(id);
+
+    if (!deletedReservation) {
+      return res.status(404).json({
+        success: false,
+        message: "Reservation not found",
+      });
+    }
+    const { slot } = deletedReservation;
+    const updatedSlot = await Slot.findByIdAndUpdate(
+      slot,
+      { isReserved: false },
+      { new: true }
+    );
+    if (!updatedSlot) {
+      return res.status(404).json({
+        success: false,
+        message: "Slot not found",
+      });
+    }
+    return res.status(200).json({
+      success: true,
+      data: slot,
+      message: "Reservation cancelled successfully",
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: "An error occurred while cancelling reservation",
       error: error.message,
     });
   }

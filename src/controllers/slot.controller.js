@@ -80,8 +80,45 @@ export const addDailySlots = async (req, res) => {
   }
 };
 
+//PUT API: Update Slot
+export const updateSlot = async (req, res) => {
+  const { id } = req.params;
+  const updateFields = req.body;
+  const isValidObjectId = isHexadecimalString(id);
+  if (!isValidObjectId) {
+    return res.status(404).json({
+      success: false,
+      message: "Slot not found",
+    });
+  }
+  try {
+    const updatedSlot = await Slot.findByIdAndUpdate(
+      id,
+      { $set: updateFields },
+      {
+        new: true,
+      }
+    );
+    return updatedSlot
+      ? res.status(200).json({
+          success: true,
+          message: "Slot updated successfully",
+          data: updatedSlot,
+        })
+      : res.status(404).json({
+          success: false,
+          message: "Slot not found",
+        });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: "An error occurred while updating slot",
+      error: error.message,
+    });
+  }
+};
 
-export const removeAllSlots = async(req, res) =>{
+export const removeAllSlots = async (req, res) => {
   const response = await Slot.deleteMany({});
   res.json({ response });
-}
+};

@@ -127,7 +127,7 @@ export const deleteCustomer = async (req, res) => {
     const deletedCustomer = await Customer.findByIdAndDelete(id);
     if (!deletedCustomer) {
       return res.status(404).json({
-        success: true,
+        success: false,
         message: "Customer not found",
       });
     }

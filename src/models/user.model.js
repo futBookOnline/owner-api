@@ -41,9 +41,11 @@ userSchema.statics.login = async function (email, password) {
   if (!password) throw Error("Password cannot be empty");
   const user = await this.findOne({ email });
   if (!user) throw Error("Email does not exist");
-  if (!user.isActive) throw Error("Email is inactive");
   const checkPassword = await comparePassword(password, user.password);
   if (!checkPassword) throw Error("Invalid login credentials");
+  if (!user.isActive) throw { id: user._id, message: "Email is inactive" };
+  if (!user.isOnboarded)
+    throw { id: user._id, message: "User has not onboarded" };
   return user;
 };
 

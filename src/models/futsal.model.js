@@ -6,7 +6,7 @@ const futsalSchema = mongoose.Schema(
       type: String,
       required: [true, "Full Name is required."],
     },
-    userId: { type: mongoose.Schema.Types.ObjectId, ref: "FutsalOwner" },
+    user: { type: mongoose.Schema.Types.ObjectId, ref: "FutsalOwner" },
     address: {
       street: {
         type: String,

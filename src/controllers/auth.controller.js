@@ -21,10 +21,17 @@ export const loginUser = async (req, res) => {
       data: rest,
     });
   } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: "An error occurred while logging in",
-      error: error.message,
-    });
+    if (error.id) {
+      // Handle specific errors with user id
+      res
+        .status(400)
+        .json({ success: false, data: error.id, message: error.message });
+    } else {
+      res.status(400).json({
+        success: false,
+        message: "An error occurred while logging in",
+        error: error.message,
+      });
+    }
   }
 };

@@ -9,6 +9,7 @@ import futsalRoute from "./routes/futsal.route.js";
 import slotRoute from "./routes/slot.route.js"
 import customerRoute from "./routes/customer.route.js"
 import reservationRoute from "./routes/reservation.route.js"
+import resetPasswordRoute from "./routes/reset.password.route.js"
 
 import { setupWebSocket } from "./sockets/socket.handler.js";
 
@@ -42,6 +43,7 @@ app.use("/api/futsals", futsalRoute);
 app.use("/api/slots", slotRoute)
 app.use("/api/reservations", reservationRoute)
 app.use("/api/customers", customerRoute)
+app.use("/api/recover", resetPasswordRoute)
 
 // Database Connection
 server.listen(port, () => {
